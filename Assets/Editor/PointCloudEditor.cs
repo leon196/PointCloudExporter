@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections;
 using UnityEngine;
 using UnityEditor;
@@ -22,6 +23,10 @@ public class PointCloudEditor : Editor {
 		}
 		if(GUILayout.Button("Export")) {
 			script.Export();
+		}
+		if(GUILayout.Button("Save Baked Colors")) {
+			string fileName = EditorUtility.SaveFilePanel("Export .png file", "", "", "png");
+			File.WriteAllBytes(fileName, script.GetBakedMap().EncodeToPNG());
 		}
 	}
 }

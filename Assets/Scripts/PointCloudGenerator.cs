@@ -26,12 +26,19 @@ namespace PointCloudExporter
 		public float noisy = 0.1f;
 		public Transform targetDisplace;
 
+		[Header("Baking")]
+		public int details = 32;
+		public int circleRadius = 32;
+		public Shader shaderBaked;
+
 		private MeshInfos points;
 		private const int verticesMax = 64998;
 		private Material material;
+		private Material materialBaked;
 		private Mesh[] meshArray;
 		private Transform[] transformArray;
 		private float displaceFiredAt = -1000f;
+		private Texture2D colorMapTexture;
 
 		void Start ()
 		{
@@ -57,17 +64,20 @@ namespace PointCloudExporter
 		public void Generate ()
 		{
 			points = LoadPointCloud();
-			Generate(points, MeshTopology.Points);
+			material = new Material(shader);
+			Generate(points, material, MeshTopology.Points);
 		}
 
 		public void Export ()
 		{
-			Generate(GetTriangles(points, size), MeshTopology.Triangles);
+			MeshInfos triangles = GetTriangles(points, size);
+			materialBaked = new Material(shaderBaked);
+			Generate(triangles, materialBaked, MeshTopology.Triangles);
+			materialBaked.SetTexture("_MainTex", GetBakedColors(triangles));
 		}
 
-		public void Generate (MeshInfos meshInfos, MeshTopology topology = MeshTopology.Points)
+		public void Generate (MeshInfos meshInfos, Material materialToApply, MeshTopology topology)
 		{
-			material = new Material(shader);
 
 			for (int c = transform.childCount - 1; c >= 0; --c) {
 				Transform child = transform.GetChild(c);
@@ -119,7 +129,7 @@ namespace PointCloudExporter
 				}
 				mesh.uv2 = uvs2;
 
-				GameObject go = CreateGameObjectWithMesh(mesh, gameObject.name + "_" + meshIndex, transform);
+				GameObject go = CreateGameObjectWithMesh(mesh, materialToApply, gameObject.name + "_" + meshIndex, transform);
 				
 				meshArray[meshIndex] = mesh;
 				transformArray[meshIndex] = go.transform;
@@ -190,12 +200,12 @@ namespace PointCloudExporter
 			return (int)Mathf.Pow(2f, Mathf.Ceil(Mathf.Log(x) / Mathf.Log(2f)));
 		}
 
-		public GameObject CreateGameObjectWithMesh (Mesh mesh, string name = "GeneratedMesh", Transform parent = null)
+		public GameObject CreateGameObjectWithMesh (Mesh mesh, Material materialToApply, string name = "GeneratedMesh", Transform parent = null)
 		{
 			GameObject meshGameObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			GameObject.DestroyImmediate(meshGameObject.GetComponent<Collider>());
 			meshGameObject.GetComponent<MeshFilter>().mesh = mesh;
-			meshGameObject.GetComponent<Renderer>().sharedMaterial = material;
+			meshGameObject.GetComponent<Renderer>().sharedMaterial = materialToApply;
 			meshGameObject.name = name;
 			meshGameObject.transform.parent = parent;
 			meshGameObject.transform.localPosition = Vector3.zero;
@@ -214,8 +224,8 @@ namespace PointCloudExporter
 			int index = 0;
 			int meshVertexIndex = 0;
 			int meshIndex = 0;
+			Vector3[] vertices = meshArray[meshIndex].vertices;
 			for (int v = 0; v < triangles.vertexCount; v += 3) {
-				Vector3[] vertices = meshArray[meshIndex].vertices;
 				Vector3 center = vertices[meshVertexIndex];
 				Vector3 normal = points.normals[index];
 				Vector3 tangent = Vector3.Normalize(Vector3.Cross(Vector3.up, normal));
@@ -239,11 +249,95 @@ namespace PointCloudExporter
 				if (meshVertexIndex >= meshArray[meshIndex].vertices.Length) {
 					meshVertexIndex = 0;
 					++meshIndex;
+					if (meshIndex < meshArray.Length) {
+						vertices = meshArray[meshIndex].vertices;
+					}
 				}
 
 				++index;
 			}
 			return triangles;
+		}
+
+		public Texture2D GetBakedColors (MeshInfos triangles)
+		{
+			List<Color> colorList = new List<Color>();
+			int[] colorIndexMap = new int[triangles.vertexCount / 3];
+			int globalIndex = 0;
+			for (int meshIndex = 0; meshIndex < meshArray.Length; ++meshIndex) {
+				Mesh mesh = meshArray[meshIndex];
+				Color[] colors = mesh.colors;
+				for (int i = 0; i < colors.Length; i += 3) {
+					Color color = colors[i];
+					Color colorSimple = new Color(Mathf.Floor(color.r * details) / details, Mathf.Floor(color.g * details) / (float)details, Mathf.Floor(color.b * details) / (float)details);
+
+					int colorIndex = colorList.IndexOf(colorSimple);
+					if (colorIndex == -1) { 
+						colorIndex = colorList.Count;
+						colorList.Add(colorSimple);
+					}
+
+					colorIndexMap[globalIndex] = colorIndex;
+					++globalIndex;
+				}
+			}
+
+			int colorCount = colorList.Count;
+			int columnCount = GetNearestPowerOfTwo(Mathf.Sqrt(colorCount));
+			int rowCount = columnCount;//1 + (int)Mathf.Floor(colorCount / (float)columnCount);
+			int width = circleRadius * columnCount;
+			int height = circleRadius * rowCount;
+
+			colorMapTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+			Color[] colorMapArray = new Color[width * height];
+			Vector2 pos;
+			Vector2 target = new Vector2(0.5f, 0.3f);
+			for (int i = 0; i < colorList.Count; ++i) {
+				int x = i % columnCount;
+				int y = (int)Mathf.Floor(i / columnCount);
+				for (int c = 0; c < circleRadius*circleRadius; ++c) {
+					int ix = c % circleRadius;
+					int iy = (int)Mathf.Floor(c / circleRadius);
+					pos.x = ix / (float)circleRadius;
+					pos.y = iy / (float)circleRadius;
+					float dist = Mathf.Clamp01(Vector2.Distance(target, pos));
+					int colorIndex = x * circleRadius + y * width * circleRadius + ix + iy * width;
+					float circle = 1f - Mathf.InverseLerp(0.2f, 0.35f, dist);
+					colorMapArray[colorIndex] = Color.Lerp(Color.clear, colorList[i], circle);
+				}
+			}
+			colorMapTexture.SetPixels(colorMapArray);
+			colorMapTexture.Apply(false);
+
+			Vector2 halfSize = new Vector2(0.5f * circleRadius / (float)width, 0.5f * circleRadius / (float)height);
+			Vector2 right = Vector2.right * halfSize.x;
+			Vector2 up = Vector2.up * halfSize.y;
+			globalIndex = 0;
+			for (int meshIndex = 0; meshIndex < meshArray.Length; ++meshIndex) {
+				Mesh mesh = meshArray[meshIndex];
+				Vector2[] uvs = new Vector2[mesh.vertices.Length];
+				for (int i = 0; i < uvs.Length; i += 3) {
+
+					int colorIndex = colorIndexMap[globalIndex];
+					float x = ((colorIndex % columnCount) * circleRadius) / (float)width;
+					float y = (Mathf.Floor(colorIndex / columnCount) * circleRadius) / (float)height;
+					Vector2 center = new Vector2(x + halfSize.x, y + halfSize.y);
+
+					uvs[i] = center + right - up;
+					uvs[i+1] = center + up;
+					uvs[i+2] = center - right - up;
+
+					++globalIndex;
+				}
+				mesh.uv = uvs;
+			}
+
+			return colorMapTexture;
+		}
+
+		public Texture2D GetBakedMap ()
+		{
+			return colorMapTexture;
 		}
 	}
 }
