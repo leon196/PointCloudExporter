@@ -23,7 +23,7 @@ namespace PointCloudExporter
 		public float noiseScale = 1f;
 		public float noiseSpeed = 1f;
 		public float targetSpeed = 1f;
-		public float noisy = 0.1f;
+		[Range(0,1)] public float noisy = 0.1f;
 		public Transform targetDisplace;
 
 		[Header("Baking")]
@@ -147,7 +147,8 @@ namespace PointCloudExporter
 		public void Displace (float dt)
 		{
 			int meshInfosIndex = 0;
-			for (int meshIndex = 0; meshIndex < meshArray.Length; ++meshIndex) {
+			for (int meshIndex = 0; meshIndex < meshArray.Length; ++meshIndex)
+			{
 				Mesh mesh = meshArray[meshIndex];
 				Vector3[] vertices = mesh.vertices;
 				Vector3[] normals = mesh.normals;
@@ -155,7 +156,8 @@ namespace PointCloudExporter
 				Vector3 offsetTarget = new Vector3();
 				Matrix4x4 matrixWorld = transform.localToWorldMatrix;
 				Matrix4x4 matrixLocal = transform.worldToLocalMatrix;
-				for (int vertexIndex = 0; vertexIndex < vertices.Length; ++vertexIndex) {
+				for (int vertexIndex = 0; vertexIndex < vertices.Length; ++vertexIndex)
+				{
 					Vector3 position = matrixWorld.MultiplyVector(vertices[vertexIndex]) + transform.position;
 					Vector3 normal = normals[vertexIndex];
 
@@ -167,13 +169,10 @@ namespace PointCloudExporter
 					offsetTarget = Vector3.Normalize(position - targetDisplace.position) * targetSpeed;
 
 					float noisyFactor = Mathf.Lerp(1f, Random.Range(0f,1f), noisy);
-
-					float shouldMove = Mathf.InverseLerp(1f-should, 1f, Mathf.PerlinNoise(normal.x*noiseScale, normal.y*noiseScale));
+					float shouldMove = Mathf.InverseLerp(1f-should, 1f, Mathf.PerlinNoise(normal.x*8f, normal.y*8f));
 
 					position += (offsetNoise + offsetTarget) * dt * speed * noisyFactor * shouldMove;
-
 					vertices[vertexIndex] = matrixLocal.MultiplyVector(position - transform.position);
-
 					++meshInfosIndex;
 				}
 				mesh.vertices = vertices;

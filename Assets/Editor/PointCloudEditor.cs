@@ -12,15 +12,18 @@ public class PointCloudEditor : Editor {
 		DrawDefaultInspector();
 		PointCloudGenerator script = (PointCloudGenerator)target;
 		
+		GUILayout.Label("Initializing", EditorStyles.boldLabel);
 		if(GUILayout.Button("Generate")) {
 			script.Generate();
 		}
 		if(GUILayout.Button("Reset")) {
 			script.Reset();
 		}
+		GUILayout.Label("Modifying", EditorStyles.boldLabel);
 		if(GUILayout.Button("Displace")) {
 			script.Displace();
 		}
+		GUILayout.Label("Exporting", EditorStyles.boldLabel);
 		if(GUILayout.Button("Export")) {
 			script.Export();
 		}
