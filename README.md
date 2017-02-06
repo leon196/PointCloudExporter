@@ -1,5 +1,7 @@
 # PointCloudExporter
 
+(This ReadMe was made from a tutorial I've written for Sketchfab.)  
+
 Hi! My name is Leon Denise, I’m an independant artist programmer.  
 I draw comics, make games, code shaders, hug trees and talk to cows.  
 You can visit my portfolio: [leon196.github.io](https://leon196.github.io)  
@@ -72,7 +74,7 @@ You can adjust the **Maximum Vertices** count to get more details.
 **Size** is the radius of the triangle.  
 **Sprite** allows you to choose a texture for the triangle.  
 
-##### About the sprite
+### About the sprite
 
 The texture used for the sprite must have **clamp wrap mode** and **disabling mipmapping** give better results. Since we use triangles instead of quads for performance, the UV mapping is sized to cover the triangle.  
 
@@ -81,7 +83,7 @@ On the left, sprite with clamp wrap mode. On the right, sprite with repeat wrap 
 <img src="img/33.png" height="250">
 <img src="img/34.png" height="250">
 
-##### About the shader
+### About the shader
 You can check the **Shader** code used to generate triangles. (warning: geometry shader stuff)  
 
 If you inspect the “Generate” function in the PointCloudGenerator script, there is a part where it creates mesh with point topology. So the script create a mesh with no triangles, only points. Then a geometry shader is generating triangle from point.  
