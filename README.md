@@ -48,13 +48,18 @@ My PLY importer C# script is pretty naive and there is chances that it won’t w
 
 
 ### Start the Unity3D project
-Download, install Unity3D.  
+Download, install Unity3D and grab the project at: [github.com/leon196/PointCloudExporter](https://github.com/leon196/PointCloudExporter)  
+If you don’t know how to use git, find the download zip button:  
+
+<img src="img/27.png" height="300">
+
 You will find the scripts and shaders used to generate triangle mesh from a point cloud.  
+
+If you don’t know about Unity3D, the [official documentation](https://docs.unity3d.com/Manual/index.html) is great and there is plenty [tutorial resources](http://unitylist.com/browse/samples) over the web. To use the tool, open the scene “PointCloudExporter”. Start the play button, select the PointCloud game object in the hierarchy window, so you can adjust parameters in the inspector window.  
+
 The main script is **PointCloudGenerator**.
 
 <img src="img/36.png" height="250">
-
-If you don’t know about Unity3D, the official documentation is great and there is plenty tutorial resources over the web. To use the tool, open the scene “PointCloudExporter”. Start the play button, select the PointCloud game object in the hierarchy window, so you can adjust parameters in the inspector window.
 
 
 ### Change parameters
