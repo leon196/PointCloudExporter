@@ -109,9 +109,9 @@ The challenge is to display triangles that will face a certain direction. Manipu
 **Should** is the ratio that selects which particles should be displaced.  
 **Time** is the duration of the displacement.  
 **Speed** is the velocity unit.  
-**Noise** Scale is the level of details of the Perlin noise.  
-**Noise** Speed is the coefficient of the noise offset.  
-**Target** Speed is the coefficient of the target offset.  
+**Noise Scale** is the level of details of the Perlin noise.  
+**Noise Speed** is the coefficient of the noise offset.  
+**Target Speed** is the coefficient of the target offset.  
 **Noisy** is like salt, it adds a grain to coefficients.  
 
 The displacement behaviour can be found in the “Displace” function. This simple version is about two vectors: a smooth random direction and moving away from a point in space. This is where you can adjust and customize the displacement behaviour.  
