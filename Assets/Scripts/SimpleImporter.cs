@@ -45,7 +45,8 @@ namespace PointCloudExporter
 								} else if (lineText.Contains("element vertex")) {
 									string[] array = lineText.Split(' ');
 									if (array.Length > 0) {
-										vertexCount = Convert.ToInt32(array[array.Length - 1]);
+										int subtractor = array.Length - 2;
+										vertexCount = Convert.ToInt32 (array [array.Length - subtractor]);
 										if (vertexCount > maximumVertex) {
 											levelOfDetails = 1 + (int)Mathf.Floor(vertexCount / maximumVertex);
 											vertexCount = maximumVertex;
