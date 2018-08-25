@@ -36,12 +36,13 @@ namespace PointCloudExporter
 					int colorDataCount = 3;
 					int index = 0;
 					int step = 0;
+                    int normalDataCount = 0;
 					while (cursor + step < length) {
 						if (header) {
 							char v = reader.ReadChar();
 							if (v == '\n') {
 								if (lineText.Contains("end_header")) {
-									header = false;
+                                    header = false;
 								} else if (lineText.Contains("element vertex")) {
 									string[] array = lineText.Split(' ');
 									if (array.Length > 0) {
@@ -58,7 +59,9 @@ namespace PointCloudExporter
 									}
 								} else if (lineText.Contains("property uchar alpha")) {
 									colorDataCount = 4;
-								}
+                                } else if (lineText.Contains("property float n")) {
+                                    normalDataCount += 1;
+                                }
 								lineText = "";
 							} else {
 								lineText += v;
@@ -69,18 +72,23 @@ namespace PointCloudExporter
 							if (index < vertexCount) {
 
 								data.vertices[index] = new Vector3(-reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
-								data.normals[index] = new Vector3(-reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
-								data.colors[index] = new Color(reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f, 1f);
+                                if (normalDataCount == 3 )
+                                {
+                                    data.normals[index] = new Vector3(-reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+                                } else {
+                                    data.normals[index] = new Vector3(1f, 1f, 1f);
+                                }
+                                data.colors[index] = new Color(reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f, 1f);
 
 								step = sizeof(float) * 6 * levelOfDetails + sizeof(byte) * colorDataCount * levelOfDetails;
 								cursor += step;
 								if (colorDataCount > 3) {
 									reader.ReadByte();
 								}
-
+                               
 								if (levelOfDetails > 1) { 
 									for (int l = 1; l < levelOfDetails; ++l) { 
-										for (int f = 0; f < 6; ++f) { 
+										for (int f = 0; f < 3 + normalDataCount; ++f) { 
 											reader.ReadSingle(); 
 										} 
 										for (int b = 0; b < colorDataCount; ++b) { 
@@ -88,7 +96,6 @@ namespace PointCloudExporter
 										} 
 									} 
 								} 
-
 								++index;
 							}
 						}
